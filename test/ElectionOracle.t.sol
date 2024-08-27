@@ -42,23 +42,13 @@ contract ElectionOracleTest is Test {
         electionOracle.grantOracleRole(address(0x9999));
 
         // Verify the Oracle role has been granted
-        assertTrue(
-            electionOracle.hasRole(
-                electionOracle.ORACLE_ROLE(),
-                address(0x9999)
-            )
-        );
+        assertTrue(electionOracle.hasRole(electionOracle.ORACLE_ROLE(), address(0x9999)));
 
         // Revoke Oracle role
         electionOracle.revokeOracleRole(address(0x9999));
 
         // Verify the Oracle role has been revoked
-        assertFalse(
-            electionOracle.hasRole(
-                electionOracle.ORACLE_ROLE(),
-                address(0x9999)
-            )
-        );
+        assertFalse(electionOracle.hasRole(electionOracle.ORACLE_ROLE(), address(0x9999)));
     }
 
     //-----------------------------------------
@@ -70,12 +60,7 @@ contract ElectionOracleTest is Test {
         electionOracle.transferOwnership(newOwner);
 
         // New owner should now have DEFAULT_ADMIN_ROLE
-        assertTrue(
-            electionOracle.hasRole(
-                electionOracle.DEFAULT_ADMIN_ROLE(),
-                newOwner
-            )
-        );
+        assertTrue(electionOracle.hasRole(electionOracle.DEFAULT_ADMIN_ROLE(), newOwner));
 
         // Verify that the new owner is correctly set in the `owner` field
         assertEq(electionOracle.owner(), newOwner);
@@ -87,12 +72,7 @@ contract ElectionOracleTest is Test {
         electionOracle.grantOracleRole(address(0x9999));
 
         // Confirm that the role is granted
-        assertTrue(
-            electionOracle.hasRole(
-                electionOracle.ORACLE_ROLE(),
-                address(0x9999)
-            )
-        );
+        assertTrue(electionOracle.hasRole(electionOracle.ORACLE_ROLE(), address(0x9999)));
 
         vm.stopPrank(); // Stop acting as newOwner
     }
@@ -115,16 +95,11 @@ contract ElectionOracleTest is Test {
         vm.warp(minEndOfElectionTimestamp + 1);
 
         // Oracle finalizes the result to "Trump"
-        electionOracle.finalizeElectionResult(
-            ElectionOracle.ElectionResult.Trump
-        );
+        electionOracle.finalizeElectionResult(ElectionOracle.ElectionResult.Trump);
 
         // Confirm the finalization was successful
         assertTrue(electionOracle.isElectionFinalized());
-        assertEq(
-            uint8(electionOracle.result()),
-            uint8(ElectionOracle.ElectionResult.Trump)
-        );
+        assertEq(uint8(electionOracle.result()), uint8(ElectionOracle.ElectionResult.Trump));
 
         vm.stopPrank(); // Stop acting as oracle
     }
@@ -135,15 +110,11 @@ contract ElectionOracleTest is Test {
         vm.warp(minEndOfElectionTimestamp + 1);
 
         // Finalize the result to "Harris"
-        electionOracle.finalizeElectionResult(
-            ElectionOracle.ElectionResult.Harris
-        );
+        electionOracle.finalizeElectionResult(ElectionOracle.ElectionResult.Harris);
 
         // Ensure finalization cannot happen twice
         vm.expectRevert("Election result is already finalized.");
-        electionOracle.finalizeElectionResult(
-            ElectionOracle.ElectionResult.Trump
-        );
+        electionOracle.finalizeElectionResult(ElectionOracle.ElectionResult.Trump);
 
         vm.stopPrank(); // Stop acting as oracle
     }
@@ -191,15 +162,10 @@ contract ElectionOracleTest is Test {
         vm.warp(minEndOfElectionTimestamp + 1);
 
         // Oracle finalizes the result to "Trump"
-        electionOracle.finalizeElectionResult(
-            ElectionOracle.ElectionResult.Trump
-        );
+        electionOracle.finalizeElectionResult(ElectionOracle.ElectionResult.Trump);
 
         // Get the final result after finalization and verify it matches
-        assertEq(
-            uint8(electionOracle.getElectionResult()),
-            uint8(ElectionOracle.ElectionResult.Trump)
-        );
+        assertEq(uint8(electionOracle.getElectionResult()), uint8(ElectionOracle.ElectionResult.Trump));
 
         vm.stopPrank(); // Stop acting as oracle
     }
@@ -210,12 +176,8 @@ contract ElectionOracleTest is Test {
 
         // Try to finalize before the election period ends and expect revert
         vm.warp(minEndOfElectionTimestamp - 1);
-        vm.expectRevert(
-            "Cannot finalize before the end of the election period."
-        );
-        electionOracle.finalizeElectionResult(
-            ElectionOracle.ElectionResult.Trump
-        );
+        vm.expectRevert("Cannot finalize before the end of the election period.");
+        electionOracle.finalizeElectionResult(ElectionOracle.ElectionResult.Trump);
 
         vm.stopPrank(); // Stop acting as oracle
     }

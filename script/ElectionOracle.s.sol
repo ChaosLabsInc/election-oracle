@@ -20,10 +20,7 @@ contract DeployElectionOracle is Script {
         uint256 minEndOfElectionTimestamp = 1730965200;
 
         // Deploy the ElectionOracle contract
-        ElectionOracle electionOracle = new ElectionOracle(
-            oracle,
-            minEndOfElectionTimestamp
-        );
+        ElectionOracle electionOracle = new ElectionOracle(oracle, minEndOfElectionTimestamp);
 
         // Print the address of the deployed contract
         console.log("ElectionOracle deployed at:", address(electionOracle));

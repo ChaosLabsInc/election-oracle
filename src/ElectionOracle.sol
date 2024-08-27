@@ -10,6 +10,7 @@ contract ElectionOracle is AccessControl {
         Trump, // Election result for candidate Trump
         Harris, // Election result for candidate Harris
         Other // Election result for any other candidate
+
     }
 
     // State variables
@@ -23,15 +24,9 @@ contract ElectionOracle is AccessControl {
     bytes32 public constant ORACLE_ROLE = keccak256("ORACLE_ROLE"); // Role identifier for the Oracle responsible for finalizing results
 
     // Events emitted by the contract
-    event OwnershipTransferred(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
-    event ElectionFinalized(
-        ElectionResult indexed finalResult,
-        uint256 indexed timestamp
-    );
+    event ElectionFinalized(ElectionResult indexed finalResult, uint256 indexed timestamp);
 
     /**
      * @dev Constructor to initialize the contract.
@@ -48,10 +43,7 @@ contract ElectionOracle is AccessControl {
         _grantRole(ORACLE_ROLE, oracle);
 
         // Ensure the provided minEndOfElectionTimestamp is in the future
-        require(
-            _minEndOfElectionTimestamp > block.timestamp,
-            "minEndOfElectionTimestamp must be in the future."
-        );
+        require(_minEndOfElectionTimestamp > block.timestamp, "minEndOfElectionTimestamp must be in the future.");
         minEndOfElectionTimestamp = _minEndOfElectionTimestamp;
 
         // Initialize result-related state variables
@@ -72,19 +64,11 @@ contract ElectionOracle is AccessControl {
      * Can only be called by an address with the ORACLE_ROLE after the election period ends.
      * @param _finalResult The final result of the election.
      */
-    function finalizeElectionResult(
-        ElectionResult _finalResult
-    ) external onlyRole(ORACLE_ROLE) {
+    function finalizeElectionResult(ElectionResult _finalResult) external onlyRole(ORACLE_ROLE) {
         // Ensure finalization is only possible after the election period ends
-        require(
-            block.timestamp >= minEndOfElectionTimestamp,
-            "Cannot finalize before the end of the election period."
-        );
+        require(block.timestamp >= minEndOfElectionTimestamp, "Cannot finalize before the end of the election period.");
         // Ensure the result has not been finalized previously
-        require(
-            result == ElectionResult.NotSet,
-            "Election result is already finalized."
-        );
+        require(result == ElectionResult.NotSet, "Election result is already finalized.");
 
         // Set the final result and mark it as finalized
         result = _finalResult;
@@ -121,10 +105,7 @@ contract ElectionOracle is AccessControl {
      * @param newOwner The address to transfer ownership to.
      */
     function transferOwnership(address newOwner) external onlyOwner {
-        require(
-            newOwner != address(0),
-            "New owner address cannot be the zero address"
-        );
+        require(newOwner != address(0), "New owner address cannot be the zero address");
 
         // Grant the new owner the admin role and revoke it from the current owner
         grantRole(DEFAULT_ADMIN_ROLE, newOwner);
