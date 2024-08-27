@@ -14,30 +14,37 @@ contract ElectionOracleTest is Test {
 
     function testProposeAndFinalizeElectionAsAdmin() public {
         vm.startPrank(admin);
+
+        // Propose Harris as the winner
         electionOracle.proposeElectionResult(
             ElectionOracle.ElectionResult.Harris
         );
+
+        // Assert that the proposal has been correctly set
+        // Cast result to uint8 since assertEq with enums requires matching standard types
         assertEq(
-            uint(electionOracle.result()),
-            uint(ElectionOracle.ElectionResult.Harris)
-        );
-        assertEq(electionOracle.resultProposalTimestamp(), block.timestamp);
-        emit log_named_uint(
-            "Proposal timestamp",
-            electionOracle.resultProposalTimestamp()
+            uint8(electionOracle.result()),
+            uint8(ElectionOracle.ElectionResult.Harris)
         );
 
+        // Assert that the proposal timestamp matches the block timestamp
+        assertEq(electionOracle.resultProposalTimestamp(), block.timestamp);
+
+        // Finalize the result
         electionOracle.finalizeElectionResult();
+
+        // Check finalization status
         assertTrue(electionOracle.isResultFinalized());
+
+        // Ensure the final result matches
         assertEq(
-            electionOracle.getElectionResult(),
-            ElectionOracle.ElectionResult.Harris
+            uint8(electionOracle.getElectionResult()),
+            uint8(ElectionOracle.ElectionResult.Harris)
         );
+
+        // Ensure the finalization timestamp matches the block timestamp
         assertEq(electionOracle.resultFinalizationTimestamp(), block.timestamp);
-        emit log_named_uint(
-            "Finalization timestamp",
-            electionOracle.resultFinalizationTimestamp()
-        );
+
         vm.stopPrank();
     }
 
