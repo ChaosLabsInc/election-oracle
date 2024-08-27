@@ -18,14 +18,10 @@ contract DeployElectionOracle is Script {
         // We allow 24 hours (to account for potential delays in election processes such as counting votes, mail-in ballots, etc.)
         // before allowing the election result to be finalized on the blockchain.
         uint256 expectedEndOfElectionTimestamp = 1730878800; // November 6, 2024, 00:00:00 EST (midnight EST)
-        uint256 minEndOfElectionTimestamp = expectedEndOfElectionTimestamp +
-            24 hours;
+        uint256 minEndOfElectionTimestamp = expectedEndOfElectionTimestamp + 24 hours;
 
         // Deploy the ElectionOracle contract
-        ElectionOracle electionOracle = new ElectionOracle(
-            oracle,
-            minEndOfElectionTimestamp
-        );
+        ElectionOracle electionOracle = new ElectionOracle(oracle, minEndOfElectionTimestamp);
 
         // Print the address of the deployed contract
         console.log("ElectionOracle deployed at:", address(electionOracle));
