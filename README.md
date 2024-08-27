@@ -2,11 +2,6 @@
 
 ---
 
-**Version:** Solidity ^0.8.25  
-**Ownership:** `AccessControl` and `Ownable` implementation using OpenZeppelin libraries.
-
----
-
 ## Overview
 
 The `ElectionOracle` smart contract is designed to store and finalize the results of an election. An `ORACLE_ROLE` is responsible for finalizing the results once the election period has ended. The contract owner can manage these roles and transfer ownership as needed. After finalization, election results can be accessed by other contracts or external parties.
