@@ -1,92 +1,154 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
+import "../lib/openzeppelin-contracts/contracts/access/AccessControl.sol";
 
 contract ElectionOracle is AccessControl {
-    // Enum for the possible election outcomes
+    // Enum representing the possible election outcomes
     enum ElectionResult {
-        NotSet,
-        Trump,
-        Harris,
-        Other
+        NotSet, // Initial/default value when the election result has not been set yet
+        Trump, // Election result for candidate Trump
+        Harris, // Election result for candidate Harris
+        Other // Election result for any other candidate
     }
 
     // State variables
-    ElectionResult public result; // Election result
-    bool public isResultFinalized; // Whether the election result is finalized
-    address public owner; // Owner of the contract
-    uint256 public resultProposalTimestamp; // Timestamp when the result was proposed
-    uint256 public resultFinalizationTimestamp; // Timestamp when the result was finalized
+    ElectionResult public result; // Holds the finalized election result
+    bool public isResultFinalized; // Indicates whether the election result has been finalized
+    address public owner; // Owner of the contract with special privileges
+    uint256 public minEndOfElectionTimestamp; // Timestamp marking the earliest time the election can be finalized
+    uint256 public resultFinalizationTimestamp; // Timestamp when the election result was finalized
 
-    // Role definition for ADMIN
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    // Role identifiers
+    bytes32 public constant ORACLE_ROLE = keccak256("ORACLE_ROLE"); // Role identifier for the Oracle responsible for finalizing results
 
-    // Events
+    // Events emitted by the contract
     event OwnershipTransferred(
         address indexed previousOwner,
         address indexed newOwner
     );
-    event ElectionProposed(ElectionResult proposedResult, uint256 timestamp);
-    event ElectionFinalized(ElectionResult finalResult, uint256 timestamp);
 
-    constructor(address admin) {
-        // Assign deployer as the initial owner
-        owner = msg.sender;
-        // Grant admin role to the deployer
-        _setupRole(ADMIN_ROLE, admin);
-        // Set the role admin as ADMIN_ROLE
-        _setRoleAdmin(ADMIN_ROLE, ADMIN_ROLE);
-        // Initialize state variables
+    event ElectionFinalized(
+        ElectionResult indexed finalResult,
+        uint256 indexed timestamp
+    );
+
+    /**
+     * @dev Constructor to initialize the contract.
+     * @param oracle The address being assigned the ORACLE_ROLE to finalize the election result.
+     * @param _minEndOfElectionTimestamp The minimum timestamp marking the end of the election period before it can be finalized.
+     */
+    constructor(address oracle, uint256 _minEndOfElectionTimestamp) {
+        owner = msg.sender; // Sets the owner to the address deploying the contract (msg.sender)
+
+        // Grant DEFAULT_ADMIN_ROLE to the contract deployer (msg.sender)
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+
+        // Grant the ORACLE_ROLE to the specified oracle address
+        _grantRole(ORACLE_ROLE, oracle);
+
+        // Ensure the provided minEndOfElectionTimestamp is in the future
+        require(
+            _minEndOfElectionTimestamp > block.timestamp,
+            "minEndOfElectionTimestamp must be in the future."
+        );
+        minEndOfElectionTimestamp = _minEndOfElectionTimestamp;
+
+        // Initialize result-related state variables
         result = ElectionResult.NotSet;
         isResultFinalized = false;
     }
 
+    /**
+     * @dev Modifier to restrict access to the owner of the contract.
+     */
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
         _;
     }
 
-    // Function to transfer ownership
+    /**
+     * @dev Function to finalize the election result.
+     * Can only be called by an address with the ORACLE_ROLE after the election period ends.
+     * @param _finalResult The final result of the election.
+     */
+    function finalizeElectionResult(
+        ElectionResult _finalResult
+    ) external onlyRole(ORACLE_ROLE) {
+        // Ensure finalization is only possible after the election period ends
+        require(
+            block.timestamp >= minEndOfElectionTimestamp,
+            "Cannot finalize before the end of the election period."
+        );
+        // Ensure the result has not been finalized previously
+        require(
+            result == ElectionResult.NotSet,
+            "Election result is already finalized."
+        );
+
+        // Set the final result and mark it as finalized
+        result = _finalResult;
+        isResultFinalized = true;
+        resultFinalizationTimestamp = block.timestamp;
+
+        // Emit an event documenting the finalization
+        emit ElectionFinalized(_finalResult, block.timestamp);
+    }
+
+    /**
+     * @dev Function to retrieve the finalized election result.
+     * Can only be called after the election has been finalized.
+     * @return The finalized election result.
+     */
+    function getElectionResult() external view returns (ElectionResult) {
+        // Ensure the result has been finalized before returning it
+        require(isResultFinalized, "Election has not been finalized yet");
+        return result;
+    }
+
+    /**
+     * @dev Function to check if the election has been finalized.
+     * @return Boolean indicating if the election has been finalized.
+     */
+    function isElectionFinalized() external view returns (bool) {
+        return isResultFinalized;
+    }
+
+    /**
+     * @dev Function to transfer contract ownership to a new owner.
+     * Ensures the newOwner is not the zero address.
+     * Updates the DEFAULT_ADMIN_ROLE to the new owner.
+     * @param newOwner The address to transfer ownership to.
+     */
     function transferOwnership(address newOwner) external onlyOwner {
         require(
             newOwner != address(0),
             "New owner address cannot be the zero address"
         );
-        emit OwnershipTransferred(owner, newOwner);
-        owner = newOwner;
+
+        // Grant the new owner the admin role and revoke it from the current owner
+        grantRole(DEFAULT_ADMIN_ROLE, newOwner);
+        revokeRole(DEFAULT_ADMIN_ROLE, owner);
+
+        emit OwnershipTransferred(owner, newOwner); // Emit the ownership transfer event
+        owner = newOwner; // Update the owner
     }
 
-    // Function to propose the election result (can be called multiple times before finalization)
-    function proposeElectionResult(
-        ElectionResult _proposedResult
-    ) external onlyRole(ADMIN_ROLE) {
-        require(!isResultFinalized, "Election result is already finalized");
-        result = _proposedResult;
-        resultProposalTimestamp = block.timestamp;
-        emit ElectionProposed(_proposedResult, block.timestamp);
+    /**
+     * @dev Function to grant the Oracle role to a specified account.
+     * Can only be called by the contract owner.
+     * @param account The address to grant the ORACLE_ROLE to.
+     */
+    function grantOracleRole(address account) external onlyOwner {
+        grantRole(ORACLE_ROLE, account);
     }
 
-    // Function to finalize the election result
-    function finalizeElectionResult() external onlyRole(ADMIN_ROLE) {
-        require(
-            result != ElectionResult.NotSet,
-            "Result has not been proposed yet"
-        );
-        require(!isResultFinalized, "Election result is already finalized");
-        isResultFinalized = true;
-        resultFinalizationTimestamp = block.timestamp;
-        emit ElectionFinalized(result, block.timestamp);
-    }
-
-    // Function to retrieve election result (for external contracts)
-    function getElectionResult() external view returns (ElectionResult) {
-        require(isResultFinalized, "Election has not been finalized yet");
-        return result;
-    }
-
-    // Function to check if the election has been finalized
-    function isElectionFinalized() external view returns (bool) {
-        return isResultFinalized;
+    /**
+     * @dev Function to revoke the Oracle role from a specified account.
+     * Can only be called by the contract owner.
+     * @param account The address to revoke the ORACLE_ROLE from.
+     */
+    function revokeOracleRole(address account) external onlyOwner {
+        revokeRole(ORACLE_ROLE, account);
     }
 }
