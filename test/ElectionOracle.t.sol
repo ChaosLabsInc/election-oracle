@@ -16,7 +16,11 @@ contract ElectionOracleTest is Test {
         minEndOfElectionTimestamp = block.timestamp + 1 days;
 
         // Deploy the contract with the specified owner, oracle, and timestamp
-        electionOracle = new ElectionOracle(owner, oracle, minEndOfElectionTimestamp);
+        electionOracle = new ElectionOracle(
+            owner,
+            oracle,
+            minEndOfElectionTimestamp
+        );
     }
 
     function testInitialOwnership() public view {
@@ -37,10 +41,20 @@ contract ElectionOracleTest is Test {
         vm.startPrank(owner);
 
         electionOracle.grantOracleRole(address(0x9999));
-        assertTrue(electionOracle.hasRole(electionOracle.ORACLE_ROLE(), address(0x9999)));
+        assertTrue(
+            electionOracle.hasRole(
+                electionOracle.ORACLE_ROLE(),
+                address(0x9999)
+            )
+        );
 
         electionOracle.revokeOracleRole(address(0x9999));
-        assertFalse(electionOracle.hasRole(electionOracle.ORACLE_ROLE(), address(0x9999)));
+        assertFalse(
+            electionOracle.hasRole(
+                electionOracle.ORACLE_ROLE(),
+                address(0x9999)
+            )
+        );
 
         vm.stopPrank();
     }
@@ -50,7 +64,12 @@ contract ElectionOracleTest is Test {
 
         electionOracle.transferOwnership(newOwner);
 
-        assertTrue(electionOracle.hasRole(electionOracle.DEFAULT_ADMIN_ROLE(), newOwner));
+        assertTrue(
+            electionOracle.hasRole(
+                electionOracle.DEFAULT_ADMIN_ROLE(),
+                newOwner
+            )
+        );
         assertEq(electionOracle.owner(), newOwner);
 
         vm.stopPrank();
@@ -70,10 +89,15 @@ contract ElectionOracleTest is Test {
 
         vm.warp(minEndOfElectionTimestamp + 1);
 
-        electionOracle.finalizeElectionResult(ElectionOracle.ElectionResult.Trump);
+        electionOracle.finalizeElectionResult(
+            ElectionOracle.ElectionResult.Trump
+        );
 
         assertTrue(electionOracle.isElectionFinalized());
-        assertEq(uint8(electionOracle.result()), uint8(ElectionOracle.ElectionResult.Trump));
+        assertEq(
+            uint8(electionOracle.result()),
+            uint8(ElectionOracle.ElectionResult.Trump)
+        );
 
         vm.stopPrank();
     }
@@ -82,10 +106,14 @@ contract ElectionOracleTest is Test {
         vm.startPrank(oracle);
         vm.warp(minEndOfElectionTimestamp + 1);
 
-        electionOracle.finalizeElectionResult(ElectionOracle.ElectionResult.Harris);
+        electionOracle.finalizeElectionResult(
+            ElectionOracle.ElectionResult.Harris
+        );
 
         vm.expectRevert("Election result is already finalized.");
-        electionOracle.finalizeElectionResult(ElectionOracle.ElectionResult.Trump);
+        electionOracle.finalizeElectionResult(
+            ElectionOracle.ElectionResult.Trump
+        );
 
         vm.stopPrank();
     }
@@ -126,9 +154,14 @@ contract ElectionOracleTest is Test {
         vm.startPrank(oracle);
         vm.warp(minEndOfElectionTimestamp + 1);
 
-        electionOracle.finalizeElectionResult(ElectionOracle.ElectionResult.Trump);
+        electionOracle.finalizeElectionResult(
+            ElectionOracle.ElectionResult.Trump
+        );
 
-        assertEq(uint8(electionOracle.getElectionResult()), uint8(ElectionOracle.ElectionResult.Trump));
+        assertEq(
+            uint8(electionOracle.getElectionResult()),
+            uint8(ElectionOracle.ElectionResult.Trump)
+        );
 
         vm.stopPrank();
     }
@@ -137,9 +170,23 @@ contract ElectionOracleTest is Test {
         vm.startPrank(oracle);
 
         vm.warp(minEndOfElectionTimestamp - 1);
-        vm.expectRevert("Cannot finalize before the end of the election period.");
-        electionOracle.finalizeElectionResult(ElectionOracle.ElectionResult.Trump);
+        vm.expectRevert(
+            "Cannot finalize before the end of the election period."
+        );
+        electionOracle.finalizeElectionResult(
+            ElectionOracle.ElectionResult.Trump
+        );
 
+        vm.stopPrank();
+    }
+
+    function testCannotFinalizeWithNotSetResult() public {
+        vm.startPrank(oracle);
+        vm.warp(minEndOfElectionTimestamp + 1);
+        vm.expectRevert("Invalid election result is provided.");
+        electionOracle.finalizeElectionResult(
+            ElectionOracle.ElectionResult.NotSet
+        ); //dummy ,! finalization
         vm.stopPrank();
     }
 }
