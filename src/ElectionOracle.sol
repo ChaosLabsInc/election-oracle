@@ -2,16 +2,10 @@
 pragma solidity ^0.8.25;
 
 import "../lib/openzeppelin-contracts/contracts/access/AccessControl.sol";
+import "./interfaces/IElectionOracle.sol";
 
 contract ElectionOracle is AccessControl {
-    enum ElectionResult {
-        NotSet,
-        Trump,
-        Harris,
-        Other
-    }
-
-    ElectionResult public result;
+    IElectionOracle.ElectionResult public result;
     bool public isResultFinalized;
     address public owner;
     address public pendingOwner;
@@ -23,7 +17,7 @@ contract ElectionOracle is AccessControl {
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event OwnershipTransferCanceled(address indexed currentOwner, address indexed pendingOwner);
     event OwnershipTransferInitiated(address indexed previousOwner, address indexed newOwner);
-    event ElectionFinalized(ElectionResult indexed finalResult, uint256 indexed timestamp);
+    event ElectionFinalized(IElectionOracle.ElectionResult indexed finalResult, uint256 indexed timestamp);
 
     /**
      * @dev
@@ -49,10 +43,10 @@ contract ElectionOracle is AccessControl {
 
     // ==================== ELECTION FUNCTIONS ====================
 
-    function finalizeElectionResult(ElectionResult _finalResult) external onlyRole(ORACLE_ROLE) {
+    function finalizeElectionResult(IElectionOracle.ElectionResult _finalResult) external onlyRole(ORACLE_ROLE) {
         require(block.timestamp >= minEndOfElectionTimestamp, "Cannot finalize before the end of the election period.");
-        require(result == ElectionResult.NotSet, "Election result is already finalized.");
-        require(_finalResult != ElectionResult.NotSet, "Invalid election result is provided.");
+        require(result == IElectionOracle.ElectionResult.NotSet, "Election result is already finalized.");
+        require(_finalResult != IElectionOracle.ElectionResult.NotSet, "Invalid election result is provided.");
 
         result = _finalResult;
         isResultFinalized = true;
@@ -61,7 +55,7 @@ contract ElectionOracle is AccessControl {
         emit ElectionFinalized(_finalResult, block.timestamp);
     }
 
-    function getElectionResult() external view returns (ElectionResult) {
+    function getElectionResult() external view returns (IElectionOracle.ElectionResult) {
         require(isResultFinalized, "Election has not been finalized yet");
         return result;
     }

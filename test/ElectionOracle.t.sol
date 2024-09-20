@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 import "../src/ElectionOracle.sol";
+import "../src/interfaces/IElectionOracle.sol";
 
 contract ElectionOracleTest is Test {
     ElectionOracle public electionOracle;
@@ -186,10 +187,10 @@ contract ElectionOracleTest is Test {
 
         vm.warp(minEndOfElectionTimestamp + 1);
 
-        electionOracle.finalizeElectionResult(ElectionOracle.ElectionResult.Trump);
+        electionOracle.finalizeElectionResult(IElectionOracle.ElectionResult.Trump);
 
         assertTrue(electionOracle.isElectionFinalized());
-        assertEq(uint8(electionOracle.result()), uint8(ElectionOracle.ElectionResult.Trump));
+        assertEq(uint8(electionOracle.result()), uint8(IElectionOracle.ElectionResult.Trump));
 
         vm.stopPrank();
     }
@@ -198,10 +199,10 @@ contract ElectionOracleTest is Test {
         vm.startPrank(oracle);
         vm.warp(minEndOfElectionTimestamp + 1);
 
-        electionOracle.finalizeElectionResult(ElectionOracle.ElectionResult.Harris);
+        electionOracle.finalizeElectionResult(IElectionOracle.ElectionResult.Harris);
 
         vm.expectRevert("Election result is already finalized.");
-        electionOracle.finalizeElectionResult(ElectionOracle.ElectionResult.Trump);
+        electionOracle.finalizeElectionResult(IElectionOracle.ElectionResult.Trump);
 
         vm.stopPrank();
     }
@@ -210,9 +211,9 @@ contract ElectionOracleTest is Test {
         vm.startPrank(oracle);
         vm.warp(minEndOfElectionTimestamp + 1);
 
-        electionOracle.finalizeElectionResult(ElectionOracle.ElectionResult.Trump);
+        electionOracle.finalizeElectionResult(IElectionOracle.ElectionResult.Trump);
 
-        assertEq(uint8(electionOracle.getElectionResult()), uint8(ElectionOracle.ElectionResult.Trump));
+        assertEq(uint8(electionOracle.getElectionResult()), uint8(IElectionOracle.ElectionResult.Trump));
 
         vm.stopPrank();
     }
@@ -222,7 +223,7 @@ contract ElectionOracleTest is Test {
 
         vm.warp(minEndOfElectionTimestamp - 1);
         vm.expectRevert("Cannot finalize before the end of the election period.");
-        electionOracle.finalizeElectionResult(ElectionOracle.ElectionResult.Trump);
+        electionOracle.finalizeElectionResult(IElectionOracle.ElectionResult.Trump);
 
         vm.stopPrank();
     }
@@ -231,7 +232,7 @@ contract ElectionOracleTest is Test {
         vm.startPrank(oracle);
         vm.warp(minEndOfElectionTimestamp + 1);
         vm.expectRevert("Invalid election result is provided.");
-        electionOracle.finalizeElectionResult(ElectionOracle.ElectionResult.NotSet);
+        electionOracle.finalizeElectionResult(IElectionOracle.ElectionResult.NotSet);
         vm.stopPrank();
     }
 
@@ -244,14 +245,14 @@ contract ElectionOracleTest is Test {
         vm.warp(minEndOfElectionTimestamp + 1);
         vm.prank(address(0x9999));
         vm.expectRevert();
-        electionOracle.finalizeElectionResult(ElectionOracle.ElectionResult.Trump);
+        electionOracle.finalizeElectionResult(IElectionOracle.ElectionResult.Trump);
     }
 
     function testOwnerCannotFinalizeElection() public {
         vm.warp(minEndOfElectionTimestamp + 1);
         vm.prank(owner);
         vm.expectRevert();
-        electionOracle.finalizeElectionResult(ElectionOracle.ElectionResult.Trump);
+        electionOracle.finalizeElectionResult(IElectionOracle.ElectionResult.Trump);
     }
 
     function testRevokedOracleCannotFinalizeElection() public {
@@ -261,7 +262,7 @@ contract ElectionOracleTest is Test {
         vm.warp(minEndOfElectionTimestamp + 1);
         vm.prank(oracle);
         vm.expectRevert();
-        electionOracle.finalizeElectionResult(ElectionOracle.ElectionResult.Trump);
+        electionOracle.finalizeElectionResult(IElectionOracle.ElectionResult.Trump);
     }
 
     // ====================

@@ -16,8 +16,7 @@ contract DeployElectionOracle is Script {
         address owner = 0xc26d7EF337e01a5cC5498D3cc2ff0610761ae637; // Specify the actual owner address here
         address oracle = 0xc26d7EF337e01a5cC5498D3cc2ff0610761ae637; // Specify the actual oracle address here
         //uint256 expectedEndOfElectionTimestamp = 1730878800; // November 6, 2024, 00:00:00 EST
-        //uint256 minEndOfElectionTimestamp = expectedEndOfElectionTimestamp +
-        //24 hours;
+        //uint256 minEndOfElectionTimestamp = expectedEndOfElectionTimestamp + 24 hours;
         uint256 currentTimestamp = block.timestamp + 1 minutes;
 
         // Deploy the ElectionOracle contract
