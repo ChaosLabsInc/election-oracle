@@ -2,28 +2,25 @@
 pragma solidity ^0.8.25;
 
 import "../lib/openzeppelin-contracts/contracts/access/AccessControl.sol";
+import "./interfaces/IElectionOracle.sol";
 
 contract ElectionOracle is AccessControl {
-    enum ElectionResult {
-        NotSet,
-        Trump,
-        Harris,
-        Other
-    }
-
-    ElectionResult public result;
+    IElectionOracle.ElectionResult public result;
     bool public isResultFinalized;
     address public owner;
-    uint256 public minEndOfElectionTimestamp;
+    address public pendingOwner;
+    uint256 public immutable minEndOfElectionTimestamp;
     uint256 public resultFinalizationTimestamp;
 
     bytes32 public constant ORACLE_ROLE = keccak256("ORACLE_ROLE");
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-    event ElectionFinalized(ElectionResult indexed finalResult, uint256 indexed timestamp);
+    event OwnershipTransferCanceled(address indexed currentOwner, address indexed pendingOwner);
+    event OwnershipTransferInitiated(address indexed previousOwner, address indexed newOwner);
+    event ElectionFinalized(IElectionOracle.ElectionResult indexed finalResult, uint256 indexed timestamp);
 
     /**
-     * @dev Constructor to initialize the contract.
+     * @dev
      * @param _owner The address being set as the owner of the contract.
      * @param oracle The address being assigned the ORACLE_ROLE to finalize the election result.
      * @param _minEndOfElectionTimestamp The minimum timestamp marking the end of the election period before it can be finalized.
@@ -37,9 +34,6 @@ contract ElectionOracle is AccessControl {
 
         require(_minEndOfElectionTimestamp > block.timestamp, "minEndOfElectionTimestamp must be in the future.");
         minEndOfElectionTimestamp = _minEndOfElectionTimestamp;
-
-        result = ElectionResult.NotSet;
-        isResultFinalized = false;
     }
 
     modifier onlyOwner() {
@@ -47,9 +41,12 @@ contract ElectionOracle is AccessControl {
         _;
     }
 
-    function finalizeElectionResult(ElectionResult _finalResult) external onlyRole(ORACLE_ROLE) {
+    // ==================== ELECTION FUNCTIONS ====================
+
+    function finalizeElectionResult(IElectionOracle.ElectionResult _finalResult) external onlyRole(ORACLE_ROLE) {
         require(block.timestamp >= minEndOfElectionTimestamp, "Cannot finalize before the end of the election period.");
-        require(result == ElectionResult.NotSet, "Election result is already finalized.");
+        require(result == IElectionOracle.ElectionResult.NotSet, "Election result is already finalized.");
+        require(_finalResult != IElectionOracle.ElectionResult.NotSet, "Invalid election result is provided.");
 
         result = _finalResult;
         isResultFinalized = true;
@@ -58,7 +55,7 @@ contract ElectionOracle is AccessControl {
         emit ElectionFinalized(_finalResult, block.timestamp);
     }
 
-    function getElectionResult() external view returns (ElectionResult) {
+    function getElectionResult() external view returns (IElectionOracle.ElectionResult) {
         require(isResultFinalized, "Election has not been finalized yet");
         return result;
     }
@@ -67,21 +64,41 @@ contract ElectionOracle is AccessControl {
         return isResultFinalized;
     }
 
+    // ==================== OWNERSHIP FUNCTIONS ====================
+
     function transferOwnership(address newOwner) external onlyOwner {
         require(newOwner != address(0), "New owner address cannot be the zero address");
+        require(newOwner != owner, "New owner address cannot be the current owner address");
 
-        grantRole(DEFAULT_ADMIN_ROLE, newOwner);
-        revokeRole(DEFAULT_ADMIN_ROLE, owner);
-
-        emit OwnershipTransferred(owner, newOwner);
-        owner = newOwner;
+        pendingOwner = newOwner;
+        emit OwnershipTransferInitiated(owner, newOwner);
     }
 
+    function acceptOwnership() external {
+        require(msg.sender == pendingOwner, "Only pending owner can accept ownership");
+
+        _grantRole(DEFAULT_ADMIN_ROLE, pendingOwner);
+        _revokeRole(DEFAULT_ADMIN_ROLE, owner);
+
+        emit OwnershipTransferred(owner, pendingOwner);
+        owner = pendingOwner;
+        pendingOwner = address(0);
+    }
+
+    function cancelOwnershipTransfer() external onlyOwner {
+        require(pendingOwner != address(0), "No pending ownership transfer to cancel");
+        address canceledPendingOwner = pendingOwner;
+        pendingOwner = address(0);
+        emit OwnershipTransferCanceled(owner, canceledPendingOwner);
+    }
+
+    // ==================== ORACLE MANAGEMENT FUNCTIONS ====================
+
     function grantOracleRole(address account) external onlyOwner {
-        grantRole(ORACLE_ROLE, account);
+        _grantRole(ORACLE_ROLE, account);
     }
 
     function revokeOracleRole(address account) external onlyOwner {
-        revokeRole(ORACLE_ROLE, account);
+        _revokeRole(ORACLE_ROLE, account);
     }
 }
