@@ -1,4 +1,4 @@
-### `ElectionOracle` Contract
+### Edge Proof `ElectionOracle` Contract
 
 ---
 
